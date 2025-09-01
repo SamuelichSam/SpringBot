@@ -1,9 +1,11 @@
 package com.telegrambot.SpringBot;
 
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
+@Getter
 @Configuration
 @PropertySource("classpath:application.properties")
 public class BotConfig {
@@ -25,12 +27,4 @@ public class BotConfig {
 
     @Value("${yandex.model}")
     private String yandexModel;
-
-    // Getters
-    public String getBotToken() { return botToken; }
-    public String getBotName() { return botName; }
-    public String getYandexApiKey() { return yandexApiKey; }
-    public String getYandexFolderId() { return yandexFolderId; }
-    public String getYandexApiUrl() { return yandexApiUrl; }
-    public String getYandexModel() { return yandexModel; }
 }

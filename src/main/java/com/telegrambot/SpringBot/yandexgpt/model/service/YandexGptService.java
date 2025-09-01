@@ -38,13 +38,11 @@ public class YandexGptService {
             httpPost.setHeader("Authorization", "Api-Key " + botConfig.getYandexApiKey());
             httpPost.setHeader("Content-Type", "application/json");
 
-            // Создаем JSON запрос
             String jsonRequest = createRequestJson(message);
             logger.debug("Request JSON: {}", jsonRequest);
 
             httpPost.setEntity(new StringEntity(jsonRequest, "UTF-8"));
 
-            // Отправляем запрос и получаем ответ
             String responseJson = httpClient.execute(httpPost, httpResponse -> {
                 int statusCode = httpResponse.getStatusLine().getStatusCode();
                 logger.info("Yandex GPT API response status: {}", statusCode);
@@ -54,13 +52,9 @@ public class YandexGptService {
                     logger.error("Yandex GPT API error: {}", errorResponse);
                     throw new RuntimeException("Yandex GPT API returned status: " + statusCode + ". Response: " + errorResponse);
                 }
-
                 return EntityUtils.toString(httpResponse.getEntity());
             });
-
             logger.debug("Response JSON: {}", responseJson);
-
-            // Парсим ответ
             return parseResponse(responseJson);
 
         } catch (Exception e) {
@@ -73,17 +67,14 @@ public class YandexGptService {
         try {
             ObjectNode requestJson = objectMapper.createObjectNode();
 
-            // Модель и URI
             requestJson.put("modelUri", "gpt://" + botConfig.getYandexFolderId() + "/" + botConfig.getYandexModel());
 
-            // Опции завершения
             ObjectNode completionOptions = objectMapper.createObjectNode();
             completionOptions.put("stream", false);
             completionOptions.put("temperature", 0.9);
             completionOptions.put("maxTokens", 2000);
             requestJson.set("completionOptions", completionOptions);
 
-            // Сообщения
             ArrayNode messages = objectMapper.createArrayNode();
             ObjectNode messageNode = objectMapper.createObjectNode();
             messageNode.put("role", "user");
@@ -104,14 +95,12 @@ public class YandexGptService {
 
             logger.info("Full response structure: {}", rootNode.toPrettyString());
 
-            // Проверяем наличие ошибок
             if (rootNode.has("error")) {
                 String error = rootNode.get("error").asText();
                 logger.error("Yandex GPT API error: {}", error);
                 return "Ошибка Yandex GPT: " + error;
             }
 
-            // Пытаемся извлечь текст ответа разными способами
             JsonNode resultNode = rootNode.path("result");
             if (resultNode.isMissingNode()) {
                 logger.warn("No 'result' field in response");
