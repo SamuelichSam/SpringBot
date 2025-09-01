@@ -102,7 +102,6 @@ public class YandexGptService {
         try {
             JsonNode rootNode = objectMapper.readTree(responseJson);
 
-            // Логируем всю структуру ответа для отладки
             logger.info("Full response structure: {}", rootNode.toPrettyString());
 
             // Проверяем наличие ошибок
