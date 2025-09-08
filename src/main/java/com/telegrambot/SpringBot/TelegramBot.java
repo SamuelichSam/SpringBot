@@ -8,16 +8,21 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardRemove;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.*;
 
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
 
     private final BotConfig botConfig;
     private final YandexGptService yandexGptService;
+    private final Map<Long, String> userStates = new HashMap<>();
+    private static final String AWAITING_IMAGE_PROMPT = "AWAITING_IMAGE_PROMPT";
 
     public TelegramBot(BotConfig botConfig, YandexGptService yandexGptService) {
         super(botConfig.getBotToken());
@@ -84,6 +89,37 @@ public class TelegramBot extends TelegramLongPollingBot {
     }
 
     private void handleUserMessage(String message, long chatId) {
+        if (userStates.getOrDefault(chatId, "").equals(AWAITING_IMAGE_PROMPT)) {
+
+            String base64Response = yandexGptService.generateImage(message);
+
+            if (base64Response != null && base64Response.contains("base64,")) {
+                try {
+                    String base64Data = base64Response.split("base64,",2)[1];
+                    byte[] imageBytes = Base64.getDecoder().decode(base64Data);
+                    InputStream inputStream = new ByteArrayInputStream(imageBytes);
+                    SendPhoto sendPhoto = new SendPhoto();
+                    sendPhoto.setChatId(chatId);
+                    sendPhoto.setPhoto(new InputFile(inputStream, "generated_image.jpg"));
+                    sendPhoto.setCaption("🎨 Ваше изображение по запросу:\n" + message);
+                    execute(sendPhoto);
+                    sendMessageWithKeyboard(chatId,
+                            "Отлично! Опишите следующую картину, или нажмите 'Новый вопрос' для выхода.");
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                    sendMessageWithKeyboard(chatId, "Не удалось обработать изображение. Попробуйте ещё раз.");
+                }
+            } else {
+                sendMessageWithKeyboard(chatId,
+                        "❌ Не удалось сгенерировать изображение.\n\n" +
+                                "Возможные причины:\n" +
+                                "• Слишком длинный или сложный запрос\n" +
+                                "• Ограничение API\n" +
+                                "Попробуйте ещё раз с более простым описанием.");
+            }
+            return;
+        }
+
         if (handleButtonActions(message, chatId)) {
             return;
         }
@@ -106,29 +142,30 @@ public class TelegramBot extends TelegramLongPollingBot {
     private boolean handleButtonActions(String messageText, long chatId) {
         switch (messageText) {
             case "🎯 Новый вопрос":
+                userStates.remove(chatId);
                 sendMessageWithKeyboard(chatId, "Задайте ваш вопрос! Я готов помочь.");
                 return true;
-            case "💡 Примеры запросов":
-                sendMessageWithKeyboard(chatId,
-                        "Вот примеры запросов:\n\n" +
-                                "• \"Объясни квантовую физику просто\"\n" +
-                                "• \"Напиши план обучения Python\"\n" +
-                                "• \"Помоги с идеей для проекта\"\n" +
-                                "• \"Объясни эту концепцию: [твоя тема]\"");
-                return true;
-            case "📊 Статистика":
-                sendMessageWithKeyboard(chatId, "Функция статистики в разработке 🚧");
+            case "🖼️ Сгенерировать картинку":
+                userStates.put(chatId, AWAITING_IMAGE_PROMPT);
+                SendMessage message = new SendMessage();
+                message.setChatId(chatId);
+                message.setText("Опишите картину, которую хотите сгенерировать");
+                try {
+                    execute(message);
+                } catch (TelegramApiException e) {
+                    e.printStackTrace();
+                }
                 return true;
             case "⚙️ Настройки":
                 sendMessageWithKeyboard(chatId,
                         "Настройки:\n\n" +
                                 "• Температура GPT: 0.9\n" +
                                 "• Макс. токенов: 2000\n" +
-                                "• Модель: " + botConfig.getYandexModel() + "\n\n" +
+                                "• Текстовая модель: " + botConfig.getYandexModel() + "\n" +
+                                "• Модель генерации изображений: " + botConfig.getYandexArtModel() + "\n\n" +
                                 "Используйте /help для дополнительной информации");
                 return true;
             case "❌ Скрыть кнопки":
-                // Скрываем клавиатуру
                 ReplyKeyboardRemove keyboardRemove = new ReplyKeyboardRemove();
                 keyboardRemove.setRemoveKeyboard(true);
 
@@ -172,20 +209,15 @@ public class TelegramBot extends TelegramLongPollingBot {
         // Первый ряд кнопок
         KeyboardRow row1 = new KeyboardRow();
         row1.add("🎯 Новый вопрос");
-        row1.add("💡 Примеры запросов");
+        row1.add("🖼️ Сгенерировать картинку");
 
         // Второй ряд кнопок
         KeyboardRow row2 = new KeyboardRow();
-        row2.add("📊 Статистика");
         row2.add("⚙️ Настройки");
-
-        // Третий ряд кнопок
-        KeyboardRow row3 = new KeyboardRow();
-        row3.add("❌ Скрыть кнопки");
+        row2.add("❌ Скрыть кнопки");
 
         keyboard.add(row1);
         keyboard.add(row2);
-        keyboard.add(row3);
 
         keyboardMarkup.setKeyboard(keyboard);
         return keyboardMarkup;

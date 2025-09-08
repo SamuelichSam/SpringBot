@@ -27,4 +27,13 @@ public class BotConfig {
 
     @Value("${yandex.model}")
     private String yandexModel;
+
+    @Value("${yandex.art.model}")
+    private String yandexArtModel;
+
+    @Value("${yandex.temperature}")
+    private Double temperature;
+
+    @Value("${yandex.max-tokens}")
+    private Integer maxTokens;
 }
