@@ -251,7 +251,6 @@ public class YandexGptService {
             JsonNode messageNode = firstAlternative.path("message");
             if (messageNode.isMissingNode()) {
                 logger.warn("No 'message' field in alternative");
-                // Попробуем получить текст напрямую из alternative
                 JsonNode textNode = firstAlternative.path("text");
                 if (!textNode.isMissingNode()) {
                     return textNode.asText();
