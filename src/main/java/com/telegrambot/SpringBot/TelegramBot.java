@@ -249,18 +249,18 @@ public class TelegramBot extends TelegramLongPollingBot {
         rowInline1.add(generateImageButton);
 
         List<InlineKeyboardButton> rowInline2 = new ArrayList<>();
-        InlineKeyboardButton settingsButton = new InlineKeyboardButton();
-        settingsButton.setText("⚙️ Настройки");
-        settingsButton.setCallbackData(CALLBACK_SETTINGS);
-
-        rowInline2.add(settingsButton);
-
-        List<InlineKeyboardButton> rowInLine3 = new ArrayList<>();
         InlineKeyboardButton astrologyButton = new InlineKeyboardButton();
         astrologyButton.setText("🔮 Астропрогноз");
         astrologyButton.setCallbackData(CALLBACK_ASTROLOGY);
 
-        rowInLine3.add(astrologyButton);
+        rowInline2.add(astrologyButton);
+
+        List<InlineKeyboardButton> rowInLine3 = new ArrayList<>();
+        InlineKeyboardButton settingsButton = new InlineKeyboardButton();
+        settingsButton.setText("⚙️ Настройки");
+        settingsButton.setCallbackData(CALLBACK_SETTINGS);
+
+        rowInLine3.add(settingsButton);
 
         rowsInline.add(rowInline1);
         rowsInline.add(rowInline2);
