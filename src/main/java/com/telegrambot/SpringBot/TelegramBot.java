@@ -44,11 +44,12 @@ public class TelegramBot extends TelegramLongPollingBot {
         if (update.hasMessage() && update.getMessage().hasText()) {
             String messageText = update.getMessage().getText();
             long chatId = update.getMessage().getChatId();
+            String firstName = update.getMessage().getChat().getFirstName();
 
             if (messageText.startsWith("/")) {
-                handleCommand(messageText, chatId);
+                handleCommand(messageText, chatId, firstName);
             } else {
-                handleUserMessage(messageText, chatId);
+                handleUserMessage(messageText, chatId, firstName);
             }
         } else if (update.hasCallbackQuery()) {
             handleCallbackQuery(update.getCallbackQuery().getMessage().getChatId(),
@@ -57,13 +58,13 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void handleCommand(String command, long chatId) {
+    private void handleCommand(String command, long chatId, String firstName) {
         switch (command) {
             case "/start":
                 SendMessage welcomeMessage = new SendMessage();
                 welcomeMessage.setChatId(chatId);
                 welcomeMessage.setText(
-                        "Привет! Я бот с интегрированным искусственным интеллектом. Задайте мне любой вопрос!");
+                        "Привет, " + firstName + "! Я бот с интегрированным искусственным интеллектом. Задайте мне любой вопрос!");
                 welcomeMessage.setReplyMarkup(createInlineKeyboard());
                 try {
                     execute(welcomeMessage);
@@ -135,7 +136,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void handleUserMessage(String message, long chatId) {
+    private void handleUserMessage(String message, long chatId, String firstName) {
         String userState = userStates.getOrDefault(chatId, "");
 
         if (userState.equals(AWAITING_IMAGE_PROMPT)) {
@@ -144,7 +145,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         if (userState.equals(AWAITING_ZODIAC_SIGN)) {
-            handleAstrologyRequest(message, chatId);
+            handleAstrologyRequest(message, chatId,  firstName);
             return;
         }
 
@@ -180,11 +181,17 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void handleAstrologyRequest(String zodiacSign, long chatId) {
+    private void handleAstrologyRequest(String zodiacSign, long chatId, String firstName) {
         try {
             SendMessage typingMessage = new SendMessage();
             typingMessage.setChatId(String.valueOf(chatId));
-            typingMessage.setText("🔮 Составляю астрологический прогноз...");
+            if (firstName.equals("Ксения")) {
+                typingMessage.setText("🔮 Астрологический прогноз составлен при " +
+                        "поддержке ВЕЛИКОЙ и УЖАСНОЙ астрологини Величко!");
+
+            } else {
+                typingMessage.setText("🔮 Составляю астрологический прогноз...");
+            }
             execute(typingMessage);
 
             String prompt = "Составь подробный астрологический прогноз на месяц для знака " + zodiacSign +
@@ -250,21 +257,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         List<InlineKeyboardButton> rowInline2 = new ArrayList<>();
         InlineKeyboardButton astrologyButton = new InlineKeyboardButton();
-        astrologyButton.setText("🔮 Астропрогноз");
+        astrologyButton.setText("🔮 Астрологический прогноз");
         astrologyButton.setCallbackData(CALLBACK_ASTROLOGY);
 
         rowInline2.add(astrologyButton);
 
-        List<InlineKeyboardButton> rowInLine3 = new ArrayList<>();
-        InlineKeyboardButton settingsButton = new InlineKeyboardButton();
-        settingsButton.setText("⚙️ Настройки");
-        settingsButton.setCallbackData(CALLBACK_SETTINGS);
-
-        rowInLine3.add(settingsButton);
-
         rowsInline.add(rowInline1);
         rowsInline.add(rowInline2);
-        rowsInline.add(rowInLine3);
 
         inlineKeyboardMarkup.setKeyboard(rowsInline);
         return inlineKeyboardMarkup;
