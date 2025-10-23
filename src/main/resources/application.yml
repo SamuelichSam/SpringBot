@@ -1,0 +1,27 @@
+bot:
+  name: ${TG_BOT_NAME}
+  token: ${TG_BOT_TOKEN}
+
+yandex:
+  api:
+    key: ${YA_API_KEY}
+    url: https://llm.api.cloud.yandex.net
+  folder-id: ${YA_FOLDER_ID}
+  model: yandexgpt
+  art:
+    model: yandex-art/latest
+  temperature: 0.9
+  max-tokens: 2000
+
+spring:
+  application:
+    name: SpringBot
+
+logging:
+  level:
+    com:
+      telegrambot:
+        SpringBot:
+          yandexgpt:
+            model:
+              service: DEBUG
