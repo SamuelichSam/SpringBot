@@ -1,5 +1,6 @@
-package com.telegrambot.SpringBot;
+package com.samuelich;
 
+import com.samuelich.controller.TelegramBot;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -11,9 +12,9 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 @SpringBootApplication
 public class SpringBotApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(SpringBotApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(SpringBotApplication.class, args);
+    }
 
     @Bean
     public CommandLineRunner registerBot(TelegramBot telegramBot) {

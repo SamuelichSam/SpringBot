@@ -1,10 +1,12 @@
-package com.telegrambot.SpringBot.yandexgpt.model.service;
+package com.samuelich.service.impl;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.telegrambot.SpringBot.BotConfig;
+import com.samuelich.config.BotConfig;
+import com.samuelich.service.YandexGptService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -20,18 +22,15 @@ import java.rmi.RemoteException;
 import java.util.Random;
 
 @Slf4j
+@RequiredArgsConstructor
 @Service
-public class YandexGptService {
-    private static final Logger logger = LoggerFactory.getLogger(YandexGptService.class);
+public class YandexGptServiceImpl implements YandexGptService {
+    private static final Logger logger = LoggerFactory.getLogger(YandexGptServiceImpl.class);
 
     private final BotConfig botConfig;
     private final ObjectMapper objectMapper;
 
-    public YandexGptService(BotConfig botConfig) {
-        this.botConfig = botConfig;
-        this.objectMapper = new ObjectMapper();
-    }
-
+    @Override
     public String generateResponse(String message) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             String url = botConfig.getYandexApiUrl() + "/foundationModels/v1/completion";
@@ -67,6 +66,7 @@ public class YandexGptService {
         }
     }
 
+    @Override
     public String generateImage(String prompt) {
         try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             String url = botConfig.getYandexApiUrl() + "/foundationModels/v1/imageGenerationAsync";
@@ -85,7 +85,7 @@ public class YandexGptService {
             // Опции генерации
             ObjectNode generationOptions = objectMapper.createObjectNode();
             generationOptions.put("seed", new Random().nextInt());
-            generationOptions.put("mime_type","image/jpeg");
+            generationOptions.put("mime_type", "image/jpeg");
 
             ObjectNode aspectRatio = objectMapper.createObjectNode();
             aspectRatio.put("width_ratio", 2);
@@ -122,7 +122,7 @@ public class YandexGptService {
             JsonNode rootNode = objectMapper.readTree(responseJson);
             JsonNode errorNode = rootNode.path("error");
             if (!errorNode.isMissingNode()) {
-                logger.warn("Yandex Art API returned error: {}", errorNode.toString());
+                logger.warn("Yandex Art API returned error: {}", errorNode);
                 return null;
             }
 
@@ -167,7 +167,7 @@ public class YandexGptService {
                 // Теперь проверяем: успешен ли результат
                 JsonNode errorNode = resultNode.path("error");
                 if (!errorNode.isMissingNode()) {
-                    logger.warn("Operation failed: {}", errorNode.toString());
+                    logger.warn("Operation failed: {}", errorNode);
                     return null;
                 }
 

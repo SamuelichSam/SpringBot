@@ -13,10 +13,6 @@ yandex:
   temperature: 0.9
   max-tokens: 2000
 
-spring:
-  application:
-    name: SpringBot
-
 logging:
   level:
     com:
