@@ -15,12 +15,4 @@ public enum UserState {
 
     private final String value;
 
-    public static UserState fromValue(String value) {
-        for (UserState state : values()) {
-            if (state.value.equals(value)) {
-                return state;
-            }
-        }
-        return DEFAULT;
-    }
 }
