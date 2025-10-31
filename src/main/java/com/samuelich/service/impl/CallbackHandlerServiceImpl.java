@@ -3,7 +3,6 @@ package com.samuelich.service.impl;
 import com.samuelich.model.enums.CallbackType;
 import com.samuelich.model.enums.UserState;
 import com.samuelich.service.CallbackHandlerService;
-import com.samuelich.service.KeyboardService;
 import com.samuelich.service.MessageHandlerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -59,9 +58,11 @@ public class CallbackHandlerServiceImpl implements CallbackHandlerService {
 
     @Override
     public SendMessage handleAstrology(Long chatId, Map<Long, UserState> userStates) {
-        userStates.put(chatId, UserState.AWAITING_ZODIAC_SIGN);
+        userStates.put(chatId, UserState.AWAITING_BIRTH_DATE);
         return messageHandlerService.createSimpleMessage(chatId,
-                "🔮 Введите ваш знак зодиака (например: Овен, Телец, Близнецы и т.д.), " +
-                        "и я составлю для вас персональный астрологический прогноз!");
+                "🔮 Для точного астрологического прогноза мне нужны ваши данные:\n\n" +
+                        "1. 📅 *Дата рождения* (в формате ДД.ММ.ГГГГ)\n" +
+                        "Например: 15.05.1990\n\n" +
+                        "Пожалуйста, введите вашу дату рождения:");
     }
 }

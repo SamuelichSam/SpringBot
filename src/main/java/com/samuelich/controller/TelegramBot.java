@@ -85,17 +85,21 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
             SendMessage processingMessage = messageHandlerService.handleUserMessage(message, chatId,
                     firstName, userStates);
-            executeMessage(processingMessage);
 
-            switch (userState) {
-                case AWAITING_IMAGE_PROMPT:
-                    handleImageGeneration(message, chatId);
-                    break;
-                case AWAITING_ZODIAC_SIGN:
-                    handleAstrologyRequest(message, chatId, firstName);
-                    break;
-                default:
-                    handleRegularMessage(message, chatId);
+            if (processingMessage != null) {
+                executeMessage(processingMessage);
+            }
+
+            if (userState == UserState.AWAITING_IMAGE_PROMPT) {
+                handleImageGeneration(message, chatId);
+            }
+
+            if (userState == UserState.AWAITING_BIRTH_PLACE) {
+                Thread.sleep(1500);
+                SendMessage finalReport = messageHandlerService.handleAstrologyRequest(chatId, firstName, userStates);
+                if (finalReport != null) {
+                    executeMessage(finalReport);
+                }
             }
         } catch (Exception e) {
             log.error("Error handling user message", e);
@@ -103,41 +107,38 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void handleImageGeneration(String message, Long chatId) {
+    private void handleAstrologyFinalReport(Long chatId, String firstName) {
+        try {
+            SendMessage finalReport = messageHandlerService.handleAstrologyRequest(chatId, firstName, userStates);
+            if (finalReport != null) {
+                executeMessage(finalReport);
+            }
+        } catch (Exception e) {
+            log.error("Error handling astrology final report", e);
+            SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
+                    "❌ Произошла ошибка при генерации прогноза. Пожалуйста, попробуйте позже.");
+            executeMessage(errorMessage);
+        }
+    }
 
+    private void handleImageGeneration(String message, Long chatId) {
         try {
             SendPhoto sendPhoto = messageHandlerService.handleImageGeneration(message, chatId);
-            execute(sendPhoto);
-            SendMessage successMessage = messageHandlerService.createMessageWithKeyboard(chatId,
-                    "Отлично! Опишите следующую картину, или нажмите 'Новый вопрос' для выхода.");
-            executeMessage(successMessage);
+            if (sendPhoto != null) {
+                execute(sendPhoto);
+                SendMessage successMessage = messageHandlerService.createMessageWithKeyboard(chatId,
+                        "🎨 Изображение успешно сгенерировано! Что еще могу для вас сделать?");
+                executeMessage(successMessage);
+            } else {
+                SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
+                        "❌ Не удалось сгенерировать изображение. Попробуйте другой запрос.");
+                executeMessage(errorMessage);
+            }
         } catch (Exception e) {
             log.error("Error generating image", e);
             SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
                     "Не удалось обработать изображение. Попробуйте ещё раз.");
             executeMessage(errorMessage);
-        }
-    }
-
-    private void handleAstrologyRequest(String zodiacSign, Long chatId, String firstName) {
-        try {
-            SendMessage response = messageHandlerService.handleAstrologyRequest(zodiacSign, chatId, firstName);
-            executeMessage(response);
-            userStates.remove(chatId);
-        } catch (Exception e) {
-            log.error("Error handling AstrologyRequest", e);
-            sendErrorMessage(chatId);
-            userStates.remove(chatId);
-        }
-    }
-
-    private void handleRegularMessage(String message, long chatId) {
-        try {
-            SendMessage response = messageHandlerService.handleRegularMessage(message, chatId);
-            executeMessage(response);
-        } catch (Exception e) {
-            log.error("Error handling regular message", e);
-            sendErrorMessage(chatId);
         }
     }
 
