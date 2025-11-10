@@ -122,10 +122,17 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         try {
             SendPhoto sendPhoto = messageHandlerService.handleImageGeneration(message, chatId);
-            execute(sendPhoto);
-            SendMessage successMessage = messageHandlerService.createMessageWithKeyboard(chatId,
-                    "Отлично! Опишите следующую картину, или нажмите 'Новый вопрос' для выхода.");
-            executeMessage(successMessage);
+            if (sendPhoto != null) {
+                execute(sendPhoto);
+                SendMessage successMessage = messageHandlerService.createMessageWithKeyboard(chatId,
+                        "Отлично! Опишите следующую картину, или нажмите 'Новый вопрос' для выхода.");
+                executeMessage(successMessage);
+            } else {
+                SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
+                        "❌ Не удалось сгенерировать изображение. Возможно, запрос нарушает правила контента. " +
+                                "Попробуйте описать что-то другое.");
+                executeMessage(errorMessage);
+            }
         } catch (Exception e) {
             log.error("Error generating image", e);
             SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
