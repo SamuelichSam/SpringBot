@@ -3,6 +3,7 @@ package com.samuelich.service.impl;
 import com.samuelich.model.enums.CallbackType;
 import com.samuelich.model.enums.UserState;
 import com.samuelich.service.CallbackHandlerService;
+import com.samuelich.service.KeyboardService;
 import com.samuelich.service.MessageHandlerService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.Map;
 public class CallbackHandlerServiceImpl implements CallbackHandlerService {
 
     private final MessageHandlerService messageHandlerService;
+    private final KeyboardService keyboardService;
 
     @Override
     public SendMessage handleCallback(Long chatId, String callbackData, Map<Long, UserState> userStates) {
@@ -24,7 +26,9 @@ public class CallbackHandlerServiceImpl implements CallbackHandlerService {
             return switch (callbackType) {
                 case NEW_QUESTION -> handleNewQuestion(chatId, userStates);
                 case GENERATE_IMAGE -> handleGenerateImage(chatId, userStates);
-                case ASTROLOGY -> handleAstrology(chatId, userStates);
+                case ASTROLOGY -> handleAstrologyChoice(chatId);
+                case ASTROLOGY_BY_SIGN -> handleAstrologyBySign(chatId, userStates);
+                case ASTROLOGY_BY_DATE -> handleAstrologyByDate(chatId, userStates);
                 case SETTINGS -> handleSettings(chatId);
             };
         } catch (IllegalArgumentException e) {
@@ -57,12 +61,26 @@ public class CallbackHandlerServiceImpl implements CallbackHandlerService {
     }
 
     @Override
-    public SendMessage handleAstrology(Long chatId, Map<Long, UserState> userStates) {
+    public SendMessage handleAstrologyByDate(Long chatId, Map<Long, UserState> userStates) {
         userStates.put(chatId, UserState.AWAITING_BIRTH_DATE);
         return messageHandlerService.createSimpleMessage(chatId,
-                "🔮 Для точного астрологического прогноза мне нужны ваши данные:\n\n" +
-                        "1. 📅 *Дата рождения* (в формате ДД.ММ.ГГГГ)\n" +
-                        "Например: 15.05.1990\n\n" +
-                        "Пожалуйста, введите вашу дату рождения:");
+                "📅 Введите вашу дату рождения в формате ДД.ММ.ГГГГ (например: 15.03.1990), " +
+                        "и я составлю для вас персональный астрологический прогноз на основе вашего знака зодиака!");
+    }
+
+    @Override
+    public SendMessage handleAstrologyBySign(Long chatId, Map<Long, UserState> userStates) {
+        userStates.put(chatId, UserState.AWAITING_ZODIAC_SIGN);
+        return messageHandlerService.createSimpleMessage(chatId,
+                "♈️ Введите ваш знак зодиака (например: Овен, Телец, Близнецы и т.д.), " +
+                        "и я составлю для вас персональный астрологический прогноз!");
+    }
+
+    private SendMessage handleAstrologyChoice(Long chatId) {
+        SendMessage message = new SendMessage();
+        message.setChatId(String.valueOf(chatId));
+        message.setText("🔮 Выберите способ составления астрологического прогноза:");
+        message.setReplyMarkup(keyboardService.createAstrologyChoiceKeyboard());
+        return message;
     }
 }

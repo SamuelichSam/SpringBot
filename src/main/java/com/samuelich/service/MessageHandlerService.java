@@ -10,7 +10,9 @@ public interface MessageHandlerService {
 
     SendMessage handleRegularMessage(String message, Long chatId);
 
-    SendMessage handleAstrologyRequest(Long chatId, String firstName, Map<Long, UserState> userStates);
+    SendMessage handleAstrologyRequest(String zodiacSign, Long chatId, String firstName);
+
+    SendMessage handleAstrologyByDate(String birthDate, Long chatId, String firstName);
 
     SendMessage createMessageWithKeyboard(Long chatId, String text);
 

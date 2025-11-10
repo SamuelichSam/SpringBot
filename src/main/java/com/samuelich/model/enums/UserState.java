@@ -8,19 +8,8 @@ import lombok.RequiredArgsConstructor;
 public enum UserState {
     DEFAULT(""),
     AWAITING_IMAGE_PROMPT("AWAITING_IMAGE_PROMPT"),
-    AWAITING_BIRTH_DATE("AWAITING_BIRTH_DATE"),
-    AWAITING_BIRTH_TIME("AWAITING_BIRTH_TIME"),
-    AWAITING_BIRTH_PLACE("AWAITING_BIRTH_PLACE"),
-    AWAITING_ZODIAC_SIGN("AWAITING_ZODIAC_SIGN");
+    AWAITING_ZODIAC_SIGN("AWAITING_ZODIAC_SIGN"),
+    AWAITING_BIRTH_DATE("AWAITING_BIRTH_DATE");
 
     private final String value;
-
-    public static UserState fromValue(String value) {
-        for (UserState state : values()) {
-            if (state.value.equals(value)) {
-                return state;
-            }
-        }
-        return DEFAULT;
-    }
 }

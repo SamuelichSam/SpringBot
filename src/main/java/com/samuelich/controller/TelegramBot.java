@@ -83,23 +83,19 @@ public class TelegramBot extends TelegramLongPollingBot {
         UserState userState = userStates.getOrDefault(chatId, UserState.DEFAULT);
 
         try {
-            SendMessage processingMessage = messageHandlerService.handleUserMessage(message, chatId,
-                    firstName, userStates);
+            if (userState == UserState.AWAITING_ZODIAC_SIGN ||
+                    userState == UserState.AWAITING_BIRTH_DATE ||
+                    userState == UserState.AWAITING_IMAGE_PROMPT) {
 
-            if (processingMessage != null) {
-                executeMessage(processingMessage);
+                SendMessage instantConfirmation = createInstantConfirmation(userState, message, chatId);
+                executeMessage(instantConfirmation);
             }
+
+            SendMessage response = messageHandlerService.handleUserMessage(message, chatId, firstName, userStates);
+            executeMessage(response);
 
             if (userState == UserState.AWAITING_IMAGE_PROMPT) {
                 handleImageGeneration(message, chatId);
-            }
-
-            if (userState == UserState.AWAITING_BIRTH_PLACE) {
-                Thread.sleep(1500);
-                SendMessage finalReport = messageHandlerService.handleAstrologyRequest(chatId, firstName, userStates);
-                if (finalReport != null) {
-                    executeMessage(finalReport);
-                }
             }
         } catch (Exception e) {
             log.error("Error handling user message", e);
@@ -107,33 +103,29 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    private void handleAstrologyFinalReport(Long chatId, String firstName) {
-        try {
-            SendMessage finalReport = messageHandlerService.handleAstrologyRequest(chatId, firstName, userStates);
-            if (finalReport != null) {
-                executeMessage(finalReport);
-            }
-        } catch (Exception e) {
-            log.error("Error handling astrology final report", e);
-            SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
-                    "❌ Произошла ошибка при генерации прогноза. Пожалуйста, попробуйте позже.");
-            executeMessage(errorMessage);
-        }
+    private SendMessage createInstantConfirmation(UserState userState, String message, Long chatId) {
+        String confirmationText = switch (userState) {
+            case AWAITING_IMAGE_PROMPT -> "🖼️ Генерирую картинку...";
+            case AWAITING_ZODIAC_SIGN -> "♈️ Ваш знак зодиака: " + message + "\n⏳ Составляю астрологический прогноз...";
+            case AWAITING_BIRTH_DATE ->
+                    "📅 Ваша дата рождения: " + message + "\n⏳ Определяю знак зодиака и составляю прогноз...";
+            default -> "";
+        };
+
+        SendMessage response = new SendMessage();
+        response.setChatId(String.valueOf(chatId));
+        response.setText(confirmationText);
+        return response;
     }
 
     private void handleImageGeneration(String message, Long chatId) {
+
         try {
             SendPhoto sendPhoto = messageHandlerService.handleImageGeneration(message, chatId);
-            if (sendPhoto != null) {
-                execute(sendPhoto);
-                SendMessage successMessage = messageHandlerService.createMessageWithKeyboard(chatId,
-                        "🎨 Изображение успешно сгенерировано! Что еще могу для вас сделать?");
-                executeMessage(successMessage);
-            } else {
-                SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,
-                        "❌ Не удалось сгенерировать изображение. Попробуйте другой запрос.");
-                executeMessage(errorMessage);
-            }
+            execute(sendPhoto);
+            SendMessage successMessage = messageHandlerService.createMessageWithKeyboard(chatId,
+                    "Отлично! Опишите следующую картину, или нажмите 'Новый вопрос' для выхода.");
+            executeMessage(successMessage);
         } catch (Exception e) {
             log.error("Error generating image", e);
             SendMessage errorMessage = messageHandlerService.createMessageWithKeyboard(chatId,

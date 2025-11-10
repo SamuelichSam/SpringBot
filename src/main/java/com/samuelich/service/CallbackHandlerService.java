@@ -15,5 +15,7 @@ public interface CallbackHandlerService {
 
     SendMessage handleSettings(Long chatId);
 
-    SendMessage handleAstrology(Long chatId, Map<Long, UserState> userStates);
+    SendMessage handleAstrologyByDate(Long chatId, Map<Long, UserState> userStates);
+
+    SendMessage handleAstrologyBySign(Long chatId, Map<Long, UserState> userStates);
 }

@@ -5,4 +5,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 public interface KeyboardService {
 
     InlineKeyboardMarkup createMainKeyboard();
+
+    InlineKeyboardMarkup createAstrologyChoiceKeyboard();
 }

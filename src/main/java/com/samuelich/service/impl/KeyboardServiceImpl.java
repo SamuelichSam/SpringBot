@@ -32,6 +32,28 @@ public class KeyboardServiceImpl implements KeyboardService {
         return inlineKeyboardMarkup;
     }
 
+    @Override
+    public InlineKeyboardMarkup createAstrologyChoiceKeyboard() {
+        InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
+        List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
+
+        List<InlineKeyboardButton> rowInline1 = new ArrayList<>();
+        rowInline1.add(createButton("♈️ По знаку зодиака", CallbackType.ASTROLOGY_BY_SIGN));
+
+        List<InlineKeyboardButton> rowInline2 = new ArrayList<>();
+        rowInline2.add(createButton("📅 По дате рождения", CallbackType.ASTROLOGY_BY_DATE));
+
+        List<InlineKeyboardButton> rowInline3 = new ArrayList<>();
+        rowInline3.add(createButton("🔙 Назад", CallbackType.NEW_QUESTION));
+
+        rowsInline.add(rowInline1);
+        rowsInline.add(rowInline2);
+        rowsInline.add(rowInline3);
+
+        inlineKeyboardMarkup.setKeyboard(rowsInline);
+        return inlineKeyboardMarkup;
+    }
+
     private InlineKeyboardButton createButton(String text, CallbackType callbackType) {
         InlineKeyboardButton button = new InlineKeyboardButton();
         button.setText(text);
