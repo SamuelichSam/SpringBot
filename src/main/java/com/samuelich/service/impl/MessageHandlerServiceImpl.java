@@ -32,9 +32,16 @@ public class MessageHandlerServiceImpl implements MessageHandlerService {
 
     @Override
     public SendMessage handleAstrologyRequest(String zodiacSign, Long chatId, String firstName) {
-        String prompt = "Составь подробный астрологический прогноз на месяц для знака " + zodiacSign +
-                ". Включи прогноз в сферах: любовь, карьера, здоровье, финансы. " +
-                "Будь позитивным и мотивирующим, но реалистичным. Ответ на русском языке. " +
+        LocalDate now = LocalDate.now();
+        String currentMonth = now.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+        String nextMonth = now.plusMonths(1).format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+
+        String prompt = "Составь подробный астрологический прогноз на " + currentMonth + " для знака " + zodiacSign +
+                ". Учитывай текущие астрологические транзиты и аспекты. " +
+                "Включи прогноз в сферах: любовь, карьера, здоровье, финансы. " +
+                "Будь позитивным и мотивирующим, но реалистичным. " +
+                "Используй только актуальную информацию для текущего периода. " +
+                "Ответ на русском языке." +
                 "И не пиши заголовок. ";
 
         String response = yandexGptService.generateResponse(prompt);
@@ -46,13 +53,20 @@ public class MessageHandlerServiceImpl implements MessageHandlerService {
     @Override
     public SendMessage handleAstrologyByDate(String birthDate, Long chatId, String firstName) {
         try {
+            LocalDate now = LocalDate.now();
+            String currentMonth = now.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
+
             LocalDate date = LocalDate.parse(birthDate, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
             String zodiacSign = determineZodiacSign(date);
-            String prompt = "Составь подробный астрологический прогноз на месяц для человека, родившегося " +
+            String prompt = "Составь подробный астрологический прогноз на " + currentMonth + " для человека, родившегося " +
                     birthDate + " (знак зодиака: " + zodiacSign + "). " +
+                    "Учитывай текущие астрологические транзиты и аспекты для этого знака. " +
                     "Включи прогноз в сферах: любовь, карьера, здоровье, финансы. " +
-                    "Учитывай особенности этого знака зодиака. " +
-                    "Будь позитивным и мотивирующим, но реалистичным. Ответ на русском языке.";
+                    "Учитывай особенности этого знака зодиака и текущий астрологический период. " +
+                    "Будь позитивным и мотивирующим, но реалистичным. " +
+                    "Используй только актуальную информацию для текущего месяца. " +
+                    "Ответ на русском языке. " +
+                    "И не пиши заголовок. ";
 
             String response = yandexGptService.generateResponse(prompt);
 
