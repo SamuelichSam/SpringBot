@@ -106,7 +106,8 @@ public class TelegramBot extends TelegramLongPollingBot {
     private SendMessage createInstantConfirmation(UserState userState, String message, Long chatId) {
         String confirmationText = switch (userState) {
             case AWAITING_IMAGE_PROMPT -> "🖼️ Генерирую картинку...";
-            case AWAITING_ZODIAC_SIGN -> "♈️ Ваш знак зодиака: " + message + "\n⏳ Составляю астрологический прогноз...";
+            case AWAITING_ZODIAC_SIGN -> "♈️ Ваш знак зодиака: " + message.toUpperCase() +
+                    "\n⏳ Составляю астрологический прогноз...";
             case AWAITING_BIRTH_DATE ->
                     "📅 Ваша дата рождения: " + message + "\n⏳ Определяю знак зодиака и составляю прогноз...";
             default -> "";

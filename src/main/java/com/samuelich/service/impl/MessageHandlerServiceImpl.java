@@ -6,6 +6,7 @@ import com.samuelich.service.KeyboardService;
 import com.samuelich.service.MessageHandlerService;
 import com.samuelich.service.YandexGptService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
@@ -16,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Map;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class MessageHandlerServiceImpl implements MessageHandlerService {
@@ -34,7 +36,6 @@ public class MessageHandlerServiceImpl implements MessageHandlerService {
     public SendMessage handleAstrologyRequest(String zodiacSign, Long chatId, String firstName) {
         LocalDate now = LocalDate.now();
         String currentMonth = now.format(DateTimeFormatter.ofPattern("MMMM yyyy"));
-        String nextMonth = now.plusMonths(1).format(DateTimeFormatter.ofPattern("MMMM yyyy"));
 
         String prompt = "Составь подробный астрологический прогноз на " + currentMonth + " для знака " + zodiacSign +
                 ". Учитывай текущие астрологические транзиты и аспекты. " +
@@ -46,7 +47,8 @@ public class MessageHandlerServiceImpl implements MessageHandlerService {
 
         String response = yandexGptService.generateResponse(prompt);
 
-        String messageText = "✨ Астрологический прогноз для " + zodiacSign + ":\n\n" + response;
+        String messageText = "✨ Астрологический прогноз для знака зодиака - " +
+                zodiacSign.toUpperCase() + ":\n\n" + response;
         return createMessageWithKeyboard(chatId, messageText);
     }
 
@@ -70,7 +72,7 @@ public class MessageHandlerServiceImpl implements MessageHandlerService {
 
             String response = yandexGptService.generateResponse(prompt);
 
-            String messageText = "✨ Ваш знак зодиака " + zodiacSign + ":\n\n" + response;
+            String messageText = "✨ Ваш знак зодиака - " + zodiacSign.toUpperCase() + ":\n\n" + response;
             return createMessageWithKeyboard(chatId, messageText);
         } catch (DateTimeParseException e) {
             return createSimpleMessage(chatId,
@@ -100,29 +102,48 @@ public class MessageHandlerServiceImpl implements MessageHandlerService {
     public SendMessage handleUserMessage(String message, Long chatId, String firstName, Map<Long, UserState> userStates) {
         UserState userState = userStates.getOrDefault(chatId, UserState.DEFAULT);
 
-        userStates.put(chatId, UserState.DEFAULT);
-
-        return switch (userState) {
-            case AWAITING_IMAGE_PROMPT -> createSimpleMessage(chatId, "");
-            case AWAITING_ZODIAC_SIGN -> handleAstrologyRequest(message, chatId, firstName);
-            case AWAITING_BIRTH_DATE -> handleAstrologyByDate(message, chatId, firstName);
-            default -> handleRegularMessage(message, chatId);
-        };
+        try {
+            SendMessage response = switch (userState) {
+                case AWAITING_IMAGE_PROMPT -> {
+                    userStates.put(chatId, UserState.DEFAULT);
+                    yield createSimpleMessage(chatId, "");
+                }
+                case AWAITING_ZODIAC_SIGN -> {
+                    userStates.put(chatId, UserState.DEFAULT);
+                    yield handleAstrologyRequest(message, chatId, firstName);
+                }
+                case AWAITING_BIRTH_DATE -> {
+                    userStates.put(chatId, UserState.DEFAULT);
+                    yield handleAstrologyByDate(message, chatId, firstName);
+                }
+                default -> handleRegularMessage(message, chatId);
+            };
+            return response;
+        } catch (Exception e) {
+            log.error("Error handling user message for chat {}: {}", chatId, e.getMessage());
+            userStates.put(chatId, UserState.DEFAULT); // Сбрасываем состояние при ошибке
+            return createMessageWithKeyboard(chatId,
+                    "❌ Произошла ошибка при обработке сообщения. Попробуйте еще раз.");
+        }
     }
 
     @Override
     public SendPhoto handleImageGeneration(String message, Long chatId) {
         try {
             String imageBase64 = yandexGptService.generateImage(message);
-            if (imageBase64 != null) {
-                InputStream imageStream = imageService.processBase64Image(imageBase64);
-                if (imageStream != null) {
-                    return imageService.createImageMessage(chatId, imageStream, message);
-                }
+            if (imageBase64 == null) {
+                throw new RuntimeException("Failed to generate image");
             }
-            return null;
+
+            InputStream imageStream = imageService.processBase64Image(imageBase64);
+            if (imageStream == null) {
+                throw new RuntimeException("Failed to process image data");
+            }
+
+            return imageService.createImageMessage(chatId, imageStream, message);
         } catch (Exception e) {
-            return null;
+            log.error("Image generation failed for chat {}: {}", chatId, e.getMessage());
+            throw new RuntimeException("Image generation failed: " + e.getMessage(), e);
         }
     }
 

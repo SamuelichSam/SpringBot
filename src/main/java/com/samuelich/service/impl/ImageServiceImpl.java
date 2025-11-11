@@ -4,8 +4,10 @@ import com.samuelich.service.ImageService;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 
@@ -15,11 +17,15 @@ public class ImageServiceImpl implements ImageService {
 
     @Override
     public SendPhoto createImageMessage(Long chatId, InputStream inputStream, String prompt) {
-        SendPhoto sendPhoto = new SendPhoto();
-        sendPhoto.setChatId(String.valueOf(chatId));
-        sendPhoto.setPhoto(new InputFile(inputStream, "generated_image.jpg"));
-        sendPhoto.setCaption("🎨 Ваше изображение по запросу:\n" + prompt);
-        return sendPhoto;
+        try (inputStream) {
+            SendPhoto sendPhoto = new SendPhoto();
+            sendPhoto.setChatId(String.valueOf(chatId));
+            sendPhoto.setPhoto(new InputFile(inputStream, "generated_image.jpg"));
+            sendPhoto.setCaption("🎨 Ваше изображение по запросу:\n" + prompt);
+            return sendPhoto;
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create image message", e);
+        }
     }
 
     @Override
